@@ -28,13 +28,12 @@ class Round:
                 self.rounds.remove(self)
                 return
             await self.start_round()
-        leaderboard = dict(sorted(self.points.items(), key=lambda item: item[1]))
-        results_message = ["> **Round results**"]
+        leaderboard = dict(reversed(sorted(self.points.items(), key=lambda item: item[1])))
+        results_message = ["> **Game results**"]
         for index, (user, points) in enumerate(leaderboard.items()):
             results_message.append("> {0}) **{1}** - {2} points".format(index + 1, user.name, points))
         await self.channel.send("\r\n".join(results_message))
         self.rounds.remove(self)
-
 
     async def start_round(self):
         self.answers.clear()

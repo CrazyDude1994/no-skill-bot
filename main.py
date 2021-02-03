@@ -5,6 +5,8 @@ from round import Round
 import discord
 import json
 import urllib3
+import os
+import os.path
 
 http = urllib3.PoolManager()
 
@@ -23,18 +25,18 @@ async def on_message(message):
     if message.author == client.user:
         return
     if client.user in message.mentions:
-        mention, command, *round_number = message.content.split(" ")
-        if len(round_number) == 0:
-            round_number = 10
-        else:
-            round_number = int(round_number[0])
+        mention, command, *param = message.content.split(" ")
         if command == "start":
-            if 5 <= round_number <= 50:
+            if len(param) == 0:
+                param = 10
+            else:
+                param = int(param[0])
+            if 5 <= param <= 50:
                 for round in rounds:
                     if round.channel == message.channel:
                         await message.channel.send("> Trivia is already started")
                         return
-                data = http.request('GET', 'https://opentdb.com/api.php?amount={0}&type=multiple&encode=url3986'.format(round_number))
+                data = http.request('GET', 'https://opentdb.com/api.php?amount={0}&type=multiple&encode=url3986'.format(param))
                 json_data = json.loads(data.data)
                 rounds.append(Round(message.channel, json_data["results"], rounds))
             else:
@@ -45,26 +47,14 @@ async def on_message(message):
                     await message.channel.send("> Round has been stopped")
                     round.task.cancel()
                     rounds.remove(round)
-        elif command == "omae-wa":
-            vc = await message.author.voice.channel.connect()
-            vc.play(discord.FFmpegPCMAudio("2.mp3"))
-            while vc.is_playing():
-                await sleep(1)
-            await vc.disconnect()
-        elif command == "loh":
-            vc = await message.author.voice.channel.connect()
-            vc.play(discord.FFmpegPCMAudio("3.mp3"))
-            while vc.is_playing():
-                await sleep(1)
-            await vc.disconnect()
-        elif command == "fbi":
-            vc = await message.author.voice.channel.connect()
-            vc.play(discord.FFmpegPCMAudio("4.mp3"))
-            while vc.is_playing():
-                await sleep(1)
-            await vc.disconnect()
-
-
+        elif command == "play" and len(param) != 0:
+            param = param[0]
+            if os.path.isfile("sounds/{0}.mp3".format(param)):
+                vc = await message.author.voice.channel.connect()
+                vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(param)))
+                while vc.is_playing():
+                    await sleep(1)
+                await vc.disconnect()
     else:
         for round in rounds:
             if round.channel == message.channel:
@@ -72,4 +62,4 @@ async def on_message(message):
                     round.add_answer(message.author, message.clean_content)
 
 
-client.run("ODA0MzIzMTA1NjQzNTYwOTYx.YBKqQw.hbae9V6wEoEnmcAujB-2O2XnGdA")
+client.run(os.environ["DISCORD_KEY"])

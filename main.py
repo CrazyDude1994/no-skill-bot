@@ -47,14 +47,18 @@ async def on_message(message):
                     await message.channel.send("> Round has been stopped")
                     round.task.cancel()
                     rounds.remove(round)
-        elif command == "play" and len(param) != 0:
-            param = param[0]
-            if os.path.isfile("sounds/{0}.mp3".format(param)):
-                vc = await message.author.voice.channel.connect()
-                vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(param)))
-                while vc.is_playing():
-                    await sleep(1)
-                await vc.disconnect()
+        elif command == "play":
+            if len(param) != 0:
+                param = param[0]
+                if os.path.isfile("sounds/{0}.mp3".format(param)):
+                    vc = await message.author.voice.channel.connect()
+                    vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(param)))
+                    while vc.is_playing():
+                        await sleep(1)
+                    await vc.disconnect()
+            else:
+                await message.channel.send("> Use play [sound]. Sounds available: `{0}`".format(" ".join([os.path.splitext(filename)[0] for filename in os.listdir("sounds")])))
+
     else:
         for round in rounds:
             if round.channel == message.channel:

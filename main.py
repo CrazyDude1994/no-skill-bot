@@ -1,5 +1,7 @@
 from asyncio import sleep
 
+from discord.ext import commands
+
 from round import Round
 
 import discord
@@ -10,9 +12,9 @@ import os.path
 
 http = urllib3.PoolManager()
 
-client = discord.Client()
-
 rounds = []
+
+client = commands.Bot(command_prefix='$')
 
 
 @client.event
@@ -22,48 +24,49 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.author == client.user:
-        return
-    if client.user in message.mentions:
-        mention, command, *param = message.content.split(" ")
-        if command == "start":
-            if len(param) == 0:
-                param = 10
-            else:
-                param = int(param[0])
-            if 5 <= param <= 50:
-                for round in rounds:
-                    if round.channel == message.channel:
-                        await message.channel.send("> Trivia is already started")
-                        return
-                data = http.request('GET', 'https://opentdb.com/api.php?amount={0}&type=multiple&encode=url3986'.format(param))
-                json_data = json.loads(data.data)
-                rounds.append(Round(message.channel, json_data["results"], rounds))
-            else:
-                await message.channel.send("> Round count must be between 5-50")
-        elif command == "stop":
-            for round in rounds:
-                if round.channel == message.channel:
-                    await message.channel.send("> Round has been stopped")
-                    round.task.cancel()
-                    rounds.remove(round)
-        elif command == "play":
-            if len(param) != 0:
-                param = param[0]
-                if os.path.isfile("sounds/{0}.mp3".format(param)):
-                    vc = await message.author.voice.channel.connect()
-                    vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(param)))
-                    while vc.is_playing():
-                        await sleep(1)
-                    await vc.disconnect()
-            else:
-                await message.channel.send("> Use play [sound]. Sounds available: `{0}`".format(" ".join([os.path.splitext(filename)[0] for filename in os.listdir("sounds")])))
+    for round in rounds:
+        if round.channel == message.channel:
+            if message.clean_content.isnumeric() and 0 < int(message.clean_content) < 5:
+                round.add_answer(message.author, message.clean_content)
+    await client.process_commands(message)
 
-    else:
+
+@client.command()
+async def start(ctx, count=10):
+    if 5 <= count <= 50:
         for round in rounds:
-            if round.channel == message.channel:
-                if message.clean_content.isnumeric() and 0 < int(message.clean_content) < 5:
-                    round.add_answer(message.author, message.clean_content)
+            if round.channel == ctx.message.channel:
+                await ctx.message.channel.send("> Trivia is already started")
+                return
+        data = http.request('GET',
+                            'https://opentdb.com/api.php?amount={0}&type=multiple&encode=url3986'.format(count))
+        json_data = json.loads(data.data)
+        rounds.append(Round(ctx.message.channel, json_data["results"], count))
+    else:
+        await ctx.message.channel.send("> Round count must be between 5-50")
+
+
+@client.command()
+async def stop(ctx):
+    for round in rounds:
+        if round.channel == ctx.message.channel:
+            await ctx.message.channel.send("> Round has been stopped")
+            round.task.cancel()
+            rounds.remove(round)
+
+
+@client.command()
+async def play(ctx, name=None):
+    if name is not None:
+        if os.path.isfile("sounds/{0}.mp3".format(name)):
+            vc = await ctx.message.author.voice.channel.connect()
+            vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(name)))
+            while vc.is_playing():
+                await sleep(1)
+            await vc.disconnect()
+    else:
+        await ctx.message.channel.send("> Use play [sound]. Sounds available: `{0}`".format(
+            " ".join([os.path.splitext(filename)[0] for filename in os.listdir("sounds")])))
 
 
 client.run(os.environ["DISCORD_KEY"])

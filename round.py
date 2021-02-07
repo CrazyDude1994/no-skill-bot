@@ -4,7 +4,7 @@ from urllib.parse import unquote
 
 
 class Round:
-    def __init__(self, channel, questions, rounds) -> None:
+    def __init__(self, channel, questions, rounds, source) -> None:
         super().__init__()
         self.answers = {}
         self.rounds = rounds
@@ -14,6 +14,7 @@ class Round:
         self.points = {}
         self.no_answers_count = 0
         self.task = create_task(self.start_game())
+        self.source = source
 
     def add_answer(self, author, answer):
         if author not in self.answers:
@@ -33,7 +34,7 @@ class Round:
         for index, (user, points) in enumerate(leaderboard.items()):
             results_message.append("> {0}) **{1}** - {2} points".format(index + 1, user.name, points))
         await self.channel.send("\r\n".join(results_message))
-        self.rounds.remove(self)
+        self.source.remove(self)
 
     async def start_round(self):
         self.answers.clear()

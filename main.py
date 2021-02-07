@@ -41,7 +41,7 @@ async def start(ctx, count=10):
         data = http.request('GET',
                             'https://opentdb.com/api.php?amount={0}&type=multiple&encode=url3986'.format(count))
         json_data = json.loads(data.data)
-        rounds.append(Round(ctx.message.channel, json_data["results"], count))
+        rounds.append(Round(ctx.message.channel, json_data["results"], count, rounds))
     else:
         await ctx.message.channel.send("> Round count must be between 5-50")
 

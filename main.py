@@ -66,7 +66,7 @@ async def play(ctx, name=None):
             await vc.disconnect()
     else:
         await ctx.message.channel.send("> Use play [sound]. Sounds available: `{0}`".format(
-            " ".join([os.path.splitext(filename)[0] for filename in os.listdir("sounds")])))
+            " ".join(sorted([os.path.splitext(filename)[0] for filename in os.listdir("sounds")]))))
 
 
 client.run(os.environ["DISCORD_KEY"])

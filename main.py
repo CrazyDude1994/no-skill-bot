@@ -56,10 +56,17 @@ async def stop(ctx):
 
 
 @client.command()
-async def play(ctx, name=None):
+async def play(ctx, name=None, channel=None):
     if name is not None:
         if os.path.isfile("sounds/{0}.mp3".format(name)):
-            vc = await ctx.message.author.voice.channel.connect()
+            join_channel = None
+            if channel is not None:
+                join_channel = discord.utils.get(ctx.guild.channels, name=channel)
+            else:
+                join_channel = ctx.message.author.voice.channel
+            if join_channel is None:
+                return
+            vc = await join_channel.connect()
             vc.play(discord.FFmpegPCMAudio("sounds/{0}.mp3".format(name)))
             while vc.is_playing():
                 await sleep(1)
